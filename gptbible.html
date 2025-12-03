@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>iBible — Redesigned</title>
+  <style>
+    /* Mobile-first, minimal containers, accessible & modern */
+    :root{
+      --bg: #0f1724; /* deep navy */
+      --panel: rgba(255,255,255,0.03);
+      --muted: #94a3b8;
+      --text: #e6eef8;
+      --accent: #6b46c1; /* deep purple */
+      --accent-2: #2dd4bf; /* teal */
+      --highlight-1: rgba(107,70,193,0.18);
+      --highlight-2: rgba(45,212,191,0.16);
+      --highlight-3: rgba(236,72,153,0.14);
+      --glass: rgba(255,255,255,0.04);
+      --card-radius: 14px;
+      --gap: 12px;
+      --shadow: 0 8px 30px rgba(2,6,23,0.6);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: linear-gradient(180deg,var(--bg) 0%, #071028 100%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:16px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    /* App shell: one main panel, a hidden left menu for larger screens */
+    .app{
+      width:100%;
+      max-width:1000px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:var(--gap);
+    }
+    header.app-header{
+      display:flex;
+      align-items:center;
+      gap:var(--gap);
+      background:linear-gradient(180deg,var(--panel), transparent);
+      border-radius:var(--card-radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+      position:relative;
+    }
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:18px;box-shadow:0 6px 18px rgba(107,70,193,0.25);
+    }
+    h1{font-size:18px;margin:0}
+    .sub{font-size:12px;color:var(--muted)}
+    /* top right controls */
+    .controls{margin-left:auto;display:flex;gap:10px;align-items:center}
+    .icon-btn{background:transparent;border:1px solid transparent;padding:8px;border-radius:10px;color:var(--text);display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+    .icon-btn:active{transform:translateY(1px)}
+    .icon-btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071028}
+
+    /* layout: content + sidebars (book/chapter & bookmarks) */
+    .main{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    /* compact nav: switchers with segmented control */
+    .switchers{
+      display:flex;gap:8px;flex-wrap:wrap;
+    }
+    .seg{
+      display:flex;gap:8px;
+      background:var(--glass);
+      padding:8px;border-radius:12px;align-items:center;
+    }
+    select, input[type=search]{
+      background:transparent;border:none;color:var(--text);padding:8px 10px;border-radius:8px;min-width:90px
+    }
+    select:focus,input:focus{outline:2px solid rgba(107,70,193,0.2)}
+
+    /* reader card */
+    .reader{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-radius:16px;padding:16px;box-shadow:var(--shadow);overflow:hidden;
+    }
+    .chapter-header{
+      display:flex;align-items:center;gap:12px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.03);
+    }
+    .chapter-title{font-size:16px;margin:0}
+    .verse-list{padding:12px 6px;display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto}
+    .verse{
+      display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:transparent;border:1px solid rgba(255,255,255,0.02);transition:transform .15s;
+    }
+    .verse:hover{transform:translateX(4px)}
+    .vnum{min-width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted);font-size:14px}
+    .vtext{flex:1;font-size:15px;line-height:1.5;color:var(--text)}
+    .vactions{display:flex;gap:8px}
+    .btn{padding:8px 10px;border-radius:10px;border:none;background:transparent;color:var(--text);cursor:pointer;font-weight:600}
+    .btn.small{padding:6px;border-radius:8px;font-size:13px}
+    /* highlight states with deeper tones */
+    .hl-purple{background:linear-gradient(90deg, rgba(107,70,193,0.14), rgba(107,70,193,0.06));border-left:4px solid #6b46c1}
+    .hl-teal{background:linear-gradient(90deg, rgba(45,212,191,0.12), rgba(45,212,191,0.04));border-left:4px solid #2dd4bf}
+    .hl-pink{background:linear-gradient(90deg, rgba(236,72,153,0.10), rgba(236,72,153,0.03));border-left:4px solid #ec4899}
+
+    /* selection for sharing */
+    .select-checkbox{width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,0.06);background:transparent}
+
+    /* bookmark & bookmark drawer */
+    .drawer{
+      position:fixed;right:14px;bottom:14px;z-index:80;display:flex;flex-direction:column;gap:10px;align-items:flex-end
+    }
+    .bookmark-drawer{min-width:320px;max-width:420px;background:linear-gradient(180deg, rgba(8,10,20,0.9), rgba(8,10,20,0.85));border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:var(--shadow);}
+    .bm-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto}
+    .bm-item{display:flex;justify-content:space-between;gap:10px;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02)}
+    .bm-meta{font-size:13px;color:var(--muted)}
+    .note{font-size:13px;color:var(--text);opacity:0.95}
+
+    /* modal for adding note */
+    .modal{position:fixed;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.85));display:flex;align-items:center;justify-content:center;z-index:120}
+    .modal-card{width:calc(100% - 40px);max-width:520px;background:linear-gradient(180deg,#071026, #071a30);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.04)}
+    textarea{width:100%;min-height:100px;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+
+    /* footer action bar */
+    .actions-bar{position:sticky;bottom:0;background:transparent;padding-top:8px;display:flex;gap:8px;align-items:center}
+
+    /* responsive: larger screens show left nav */
+    @media(min-width:880px){
+      .app{grid-template-columns: 240px 1fr 320px;align-items:start}
+      header.app-header{grid-column:1/-1}
+      .side{
+        background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+        padding:12px;border-radius:12px;height:fit-content;align-self:start
+      }
+      .left-nav{display:flex;flex-direction:column;gap:8px}
+    }
+
+    /* small-screen niceties */
+    @media(max-width:420px){
+      .vtext{font-size:14px}
+      .logo{width:40px;height:40px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="iBible Reader">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo">IB</div>
+        <div>
+          <h1>iBible</h1>
+          <div class="sub">New King James Version</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="openBookmarks" class="icon-btn" title="Bookmarks">
+          🔖 Bookmarks
+        </button>
+        <button id="toggleLeft" class="icon-btn" title="Toggle Navigation">☰</button>
+        <button id="shareSelected" class="icon-btn primary" title="Share selected verses">Share</button>
+      </div>
+    </header>
+
+    <!-- Left nav for book/chapter (hidden under breakpoint) -->
+    <nav class="side left-nav" id="leftNav" aria-hidden="true">
+      <div class="seg">
+        <label for="bookSelect" class="sub" style="min-width:60px;">Book</label>
+        <select id="bookSelect" aria-label="Select book"></select>
+      </div>
+      <div class="seg" style="margin-top:8px">
+        <label for="chapterSelect" class="sub" style="min-width:60px;">Chapter</label>
+        <select id="chapterSelect" aria-label="Select chapter"></select>
+      </div>
+      <div style="margin-top:8px" class="seg">
+        <input id="verseSearch" type="search" placeholder="Search verses or text" aria-label="Search verses" />
+      </div>
+    </nav>
+
+    <!-- Main reader -->
+    <main class="main" id="mainReader">
+      <section class="reader" aria-live="polite">
+        <div class="chapter-header">
+          <div>
+            <div class="chapter-title" id="chapterTitle">Welcome — select a book</div>
+            <div class="sub" id="chapterMeta">Tap the book & chapter to begin</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <div class="sub">Highlight</div>
+            <button class="btn small" data-color="purple">●</button>
+            <button class="btn small" data-color="teal">●</button>
+            <button class="btn small" data-color="pink">●</button>
+          </div>
+        </div>
+
+        <div class="verse-list" id="verseList" tabindex="0">
+          <!-- Verses are injected here -->
+        </div>
+
+        <div class="actions-bar">
+          <label class="sub" style="margin-right:auto">Select verses then press Share to share text</label>
+          <button id="selectAll" class="btn">Select all</button>
+          <button id="clearSelection" class="btn">Clear</button>
+        </div>
+      </section>
+
+      <!-- Bookmark drawer for mobile is positioned in .drawer -->
+      <aside class="side bookmark-drawer" id="bookmarkPanel" aria-hidden="true" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="sub">Bookmarks</div>
+          <button id="closeBookmarks" class="btn">Close</button>
+        </div>
+        <div class="bm-list" id="bmList">
+          <div class="sub" style="opacity:0.6">No bookmarks yet</div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Floating drawer (mobile) -->
+    <div class="drawer">
+      <div id="floatingBookmarks" class="bookmark-drawer" style="display:none"></div>
+    </div>
+
+    <!-- Modal for notes on bookmark -->
+    <div id="modal" class="modal" style="display:none">
+      <div class="modal-card">
+        <h3 style="margin-top:0">Add bookmark & note</h3>
+        <div id="modalRef" class="sub" style="margin-bottom:8px"></div>
+        <textarea id="bookmarkNote" placeholder="Add a short note... (optional)"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button id="modalCancel" class="btn">Cancel</button>
+          <button id="modalSave" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  // Minimal, well-structured JS (search works without regex - safe and robust)
+  const bibleStructure = [
+    { book: "Genesis", chapters:50 },{ book:"Exodus", chapters:40 },{ book:"Leviticus", chapters:27 },{ book:"Numbers", chapters:36 },{ book:"Deuteronomy", chapters:34 },{ book:"Joshua", chapters:24 },{ book:"Judges", chapters:21 },{ book:"Ruth", chapters:4 },{ book:"1 Samuel", chapters:31 },{ book:"2 Samuel", chapters:24 },{ book:"1 Kings", chapters:22 },{ book:"2 Kings", chapters:25 },{ book:"1 Chronicles", chapters:29 },{ book:"2 Chronicles", chapters:36 },{ book:"Ezra", chapters:10 },{ book:"Nehemiah", chapters:13 },{ book:"Esther", chapters:10 },{ book:"Job", chapters:42 },{ book:"Psalms", chapters:150 },{ book:"Proverbs", chapters:31 },{ book:"Ecclesiastes", chapters:12 },{ book:"Song of Solomon", chapters:8 },{ book:"Isaiah", chapters:66 },{ book:"Jeremiah", chapters:52 },{ book:"Lamentations", chapters:5 },{ book:"Ezekiel", chapters:48 },{ book:"Daniel", chapters:12 },{ book:"Hosea", chapters:14 },{ book:"Joel", chapters:3 },{ book:"Amos", chapters:9 },{ book:"Obadiah", chapters:1 },{ book:"Jonah", chapters:4 },{ book:"Micah", chapters:7 },{ book:"Nahum", chapters:3 },{ book:"Habakkuk", chapters:3 },{ book:"Zephaniah", chapters:3 },{ book:"Haggai", chapters:2 },{ book:"Zechariah", chapters:14 },{ book:"Malachi", chapters:4 },{ book:"Matthew", chapters:28 },{ book:"Mark", chapters:16 },{ book:"Luke", chapters:24 },{ book:"John", chapters:21 },{ book:"Acts", chapters:28 },{ book:"Romans", chapters:16 },{ book:"1 Corinthians", chapters:16 },{ book:"2 Corinthians", chapters:13 },{ book:"Galatians", chapters:6 },{ book:"Ephesians", chapters:6 },{ book:"Philippians", chapters:4 },{ book:"Colossians", chapters:4 },{ book:"1 Thessalonians", chapters:5 },{ book:"2 Thessalonians", chapters:3 },{ book:"1 Timothy", chapters:6 },{ book:"2 Timothy", chapters:4 },{ book:"Titus", chapters:3 },{ book:"Philemon", chapters:1 },{ book:"Hebrews", chapters:13 },{ book:"James", chapters:5 },{ book:"1 Peter", chapters:5 },{ book:"2 Peter", chapters:3 },{ book:"1 John", chapters:5 },{ book:"2 John", chapters:1 },{ book:"3 John", chapters:1 },{ book:"Jude", chapters:1 },{ book:"Revelation", chapters:22 }
+  ];
+
+  // Elements
+  const bookSelect = document.getElementById('bookSelect');
+  const chapterSelect = document.getElementById('chapterSelect');
+  const chapterTitle = document.getElementById('chapterTitle');
+  const chapterMeta = document.getElementById('chapterMeta');
+  const verseList = document.getElementById('verseList');
+  const leftNav = document.getElementById('leftNav');
+  const toggleLeft = document.getElementById('toggleLeft');
+  const openBookmarks = document.getElementById('openBookmarks');
+  const bookmarkPanel = document.getElementById('bookmarkPanel');
+  const bmList = document.getElementById('bmList');
+  const modal = document.getElementById('modal');
+  const modalRef = document.getElementById('modalRef');
+  const bookmarkNote = document.getElementById('bookmarkNote');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalSave = document.getElementById('modalSave');
+  const shareSelected = document.getElementById('shareSelected');
+  const selectAllBtn = document.getElementById('selectAll');
+  const clearSelectionBtn = document.getElementById('clearSelection');
+  const verseSearch = document.getElementById('verseSearch');
+
+  // state
+  let current = { book: 'Psalms', chapter:1 };
+  let versesData = [];
+  let selectedVerses = new Set();
+  let pendingBookmarkRef = null;
+  let currentHighlight = 'purple';
+  let searchTimer = null;
+  let lastSearch = '';
+
+  // populate book select
+  function init() {
+    bibleStructure.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.book; opt.textContent = b.book;
+      bookSelect.appendChild(opt);
+    });
+    // defaults
+    bookSelect.value = current.book;
+    populateChapters(current.book);
+    chapterSelect.value = current.chapter;
+    loadChapter(current.book, current.chapter);
+
+    // handlers
+    toggleLeft.addEventListener('click', ()=>{leftNav.style.display = leftNav.style.display === 'none' ? 'block' : 'none'});
+    openBookmarks.addEventListener('click', toggleBookmarkPanel);
+    document.querySelectorAll('.btn.small').forEach(b=>b.addEventListener('click', ()=>{currentHighlight=b.dataset.color}));
+
+    bookSelect.addEventListener('change', ()=>{
+      populateChapters(bookSelect.value);
+      chapterSelect.value = 1; loadChapter(bookSelect.value,1);
+    });
+    chapterSelect.addEventListener('change', ()=> loadChapter(bookSelect.value, chapterSelect.value));
+
+    modalCancel.addEventListener('click', ()=>{modal.style.display='none';bookmarkNote.value='';pendingBookmarkRef=null});
+    modalSave.addEventListener('click', saveBookmarkNote);
+
+    selectAllBtn.addEventListener('click', ()=>{selectAllVerses(true)});
+    clearSelectionBtn.addEventListener('click', ()=>{selectAllVerses(false)});
+    shareSelected.addEventListener('click', shareSelectedVerses);
+
+    verseSearch.addEventListener('input', (e)=>{
+      // debounce to avoid rapid renders
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(()=>{
+        const q = e.target.value || '';
+        lastSearch = q;
+        filterVerses(q);
+      }, 220);
+    });
+
+    // load bookmarks on init
+    renderBookmarks();
+  }
+
+  function populateChapters(book){
+    chapterSelect.innerHTML='';
+    const bookData = bibleStructure.find(b=>b.book===book);
+    for(let i=1;i<=bookData.chapters;i++){const o=document.createElement('option');o.value=i;o.textContent=i;chapterSelect.appendChild(o)}
+  }
+
+  // Fetch chapter via bible-api.com (KJV by default)
+  async function loadChapter(book, chapter){
+    chapterTitle.textContent = `${book} ${chapter}`;
+    chapterMeta.textContent = 'Loading…';
+    verseList.innerHTML = `<div class="sub">Loading verses...</div>`;
+    selectedVerses.clear();
+    try {
+      const url = `https://bible-api.com/${encodeURIComponent(book)}+${chapter}?translation=KJV`;
+      const res = await fetch(url);
+      const data = await res.json();
+      versesData = data.verses || [];
+      renderVerses();
+      chapterMeta.textContent = `${versesData.length} verses`;
+      // apply current search if any
+      if(verseSearch.value && verseSearch.value.trim()!=='') filterVerses(verseSearch.value);
+    } catch(e){
+      verseList.innerHTML = `<div class="sub">Could not load chapter. Check network.</div>`;
+      chapterMeta.textContent = '';
+    }
+  }
+
+  // renderVerses accepts optional array; highlights first match per verse
+  function renderVerses(list){
+    const source = list || versesData;
+    verseList.innerHTML = '';
+    if(!source || source.length===0){
+      verseList.innerHTML = '<div class="sub" style="opacity:0.7">No verses to display.</div>';
+      return;
+    }
+    const q = (lastSearch||'').trim().toLowerCase();
+    source.forEach(v=>{
+      const div = document.createElement('div'); div.className='verse'; div.dataset.verse = v.verse;
+      // check highlight saved
+      const key = bkKey(bookSelect.value, chapterSelect.value, v.verse);
+      const saved = localStorage.getItem(key);
+      if(saved){ div.classList.add(saved); }
+
+      // prepare text, optionally highlight search term (first occurrence)
+      const rawText = v.text || '';
+      let vHtml = escapeHtml(rawText);
+      if(q){
+        const idx = rawText.toLowerCase().indexOf(q);
+        if(idx !== -1){
+          const before = escapeHtml(rawText.slice(0, idx));
+          const match = escapeHtml(rawText.slice(idx, idx + q.length));
+          const after = escapeHtml(rawText.slice(idx + q.length));
+          vHtml = before + '<mark class="search-hit">' + match + '</mark>' + after;
+        }
+      }
+
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="select-checkbox" type="checkbox" aria-label="Select verse ${v.verse}" />
+          <div class="vnum">${v.verse}</div>
+        </div>
+        <div class="vtext">${vHtml}</div>
+        <div class="vactions">
+          <button class="btn small" data-verse="${v.verse}" data-action="bookmark">🔖</button>
+          <button class="btn small" data-verse="${v.verse}" data-action="highlight">✳️</button>
+        </div>
+      `;
+      // attach handlers
+      const checkbox = div.querySelector('input[type=checkbox]');
+      checkbox.addEventListener('change',(e)=>{
+        if(e.target.checked) selectedVerses.add(v.verse); else selectedVerses.delete(v.verse);
+      });
+      div.querySelector('[data-action=bookmark]').addEventListener('click', ()=>openBookmarkModal(v));
+      div.querySelector('[data-action=highlight]').addEventListener('click', ()=>toggleHighlight(div, v));
+
+      verseList.appendChild(div);
+    });
+  }
+
+  // filter verses by query (verse number or text)
+  function filterVerses(query){
+    const q = (query||'').trim().toLowerCase();
+    lastSearch = query || '';
+    if(!q){ renderVerses(); return; }
+    // if query is only digits, match verse numbers including ranges like "5-7"
+    const digitsOnly = /^\d+(?:\s*-\s*\d+)?$/.test(q);
+    const results = versesData.filter(v=>{
+      if(digitsOnly){
+        // handle single number or range
+        if(q.includes('-')){
+          const parts = q.split('-').map(s => Number(s.trim()));
+          const a = parts[0], b = parts[1] || parts[0];
+          return v.verse >= a && v.verse <= b;
+        }
+        return String(v.verse) === q || String(v.verse).includes(q);
+      }
+      // search in text
+      return (v.text || '').toLowerCase().includes(q) || String(v.verse) === q;
+    });
+    if(results.length===0){
+      verseList.innerHTML = `<div class="sub" style="opacity:0.7">No matches for "${escapeHtml(query)}"</div>`;
+      return;
+    }
+    renderVerses(results);
+  }
+
+  // highlight management: save classes 'hl-purple' etc.
+  function toggleHighlight(div, verse){
+    const key = bkKey(bookSelect.value, chapterSelect.value, verse.verse);
+    const classes = ['hl-purple','hl-teal','hl-pink'];
+    const currentClass = classes.find(c=>div.classList.contains(c));
+    if(!currentClass){
+      const cls = mapColorToClass(currentHighlight);
+      div.classList.add(cls); localStorage.setItem(key, cls);
+    } else {
+      div.classList.remove(currentClass); localStorage.removeItem(key);
+    }
+  }
+  function mapColorToClass(color){
+    if(color==='purple') return 'hl-purple';
+    if(color==='teal') return 'hl-teal';
+    if(color==='pink') return 'hl-pink';
+    return 'hl-purple';
+  }
+
+  // bookmarking with notes
+  function openBookmarkModal(verse){
+    pendingBookmarkRef = { book: bookSelect.value, chapter: chapterSelect.value, verse: verse.verse, text: verse.text };
+    modalRef.textContent = `${pendingBookmarkRef.book} ${pendingBookmarkRef.chapter}:${pendingBookmarkRef.verse}`;
+    bookmarkNote.value = '';
+    modal.style.display = 'flex';
+  }
+  function saveBookmarkNote(){
+    const notes = JSON.parse(localStorage.getItem('ibible_bookmarks')||'[]');
+    const payload = { ...pendingBookmarkRef, note: bookmarkNote.value, created: new Date().toISOString(), color: mapColorToClass(currentHighlight) };
+    const exists = notes.find(b=>b.book===payload.book && b.chapter===payload.chapter && b.verse===payload.verse);
+    if(!exists) notes.unshift(payload);
+    localStorage.setItem('ibible_bookmarks', JSON.stringify(notes));
+    modal.style.display='none'; pendingBookmarkRef=null; bookmarkNote.value='';
+    renderBookmarks();
+    quickToast(`Bookmarked ${payload.book} ${payload.chapter}:${payload.verse}`);
+  }
+
+  function renderBookmarks(){
+    const notes = JSON.parse(localStorage.getItem('ibible_bookmarks')||'[]');
+    bmList.innerHTML = '';
+    if(notes.length===0){ bmList.innerHTML = '<div class="sub" style="opacity:0.6">No bookmarks yet</div>'; return }
+    notes.forEach(n=>{
+      const item = document.createElement('div'); item.className='bm-item';
+      item.innerHTML = `<div>
+          <div style="font-weight:700">${n.book} ${n.chapter}:${n.verse}</div>
+          <div class="bm-meta">${new Date(n.created).toLocaleString()}</div>
+          <div class="note">${escapeHtml(n.note||'—')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="btn" data-action="goto">Open</button>
+          <button class="btn" data-action="del">Delete</button>
+        </div>`;
+      item.querySelector('[data-action=goto]').addEventListener('click', ()=>{
+        bookSelect.value = n.book; populateChapters(n.book); chapterSelect.value = n.chapter; loadChapter(n.book, n.chapter);
+        setTimeout(()=>{ const el = [...document.querySelectorAll('.verse')].find(x=>x.dataset.verse==n.verse); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}) }, 600);
+      });
+      item.querySelector('[data-action=del]').addEventListener('click', ()=>{
+        deleteBookmark(n); renderBookmarks();
+      });
+      bmList.appendChild(item);
+    });
+  }
+  function deleteBookmark(b){
+    let notes = JSON.parse(localStorage.getItem('ibible_bookmarks')||'[]');
+    notes = notes.filter(x=>!(x.book===b.book && x.chapter===b.chapter && x.verse===b.verse));
+    localStorage.setItem('ibible_bookmarks', JSON.stringify(notes));
+  }
+
+  // share selected verses (bulk) — uses Web Share API when available, fallback to copy
+  function shareSelectedVerses(){
+    if(selectedVerses.size===0){ quickToast('No verses selected'); return }
+    const arr = Array.from(selectedVerses).sort((a,b)=>a-b);
+    const lines = arr.map(vn=>{
+      const v = versesData.find(x=>x.verse==vn); return `${bookSelect.value} ${chapterSelect.value}:${vn} — ${v ? v.text.trim() : ''}`;
+    }).join('\n\n');
+
+    if(navigator.share){
+      navigator.share({title:`${bookSelect.value} ${chapterSelect.value}`, text: lines}).catch(()=>copyToClipboard(lines));
+    } else {
+      copyToClipboard(lines);
+    }
+  }
+
+  function copyToClipboard(text){
+    navigator.clipboard && navigator.clipboard.writeText(text).then(()=>quickToast('Copied to clipboard'))
+    .catch(()=>{ prompt('Copy the selected verses', text); });
+  }
+
+  // helpers
+  function bkKey(book, chapter, verse){ return `ibible_hl::${book}::${chapter}::${verse}` }
+  function quickToast(msg){
+    const t = document.createElement('div'); t.style.position='fixed'; t.style.right='16px'; t.style.bottom='16px'; t.style.background='linear-gradient(90deg,var(--accent),var(--accent-2))'; t.style.color='#071028'; t.style.padding='10px 14px'; t.style.borderRadius='10px'; t.style.fontWeight='700'; t.style.boxShadow='0 10px 30px rgba(2,6,23,0.6)'; t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>{ t.style.opacity=0; setTimeout(()=>t.remove(),300) },2000);
+  }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+  function selectAllVerses(flag){
+    document.querySelectorAll('.verse input[type=checkbox]').forEach(cb=>{cb.checked=flag; const v = cb.closest('.verse').dataset.verse; if(flag) selectedVerses.add(Number(v)); else selectedVerses.delete(Number(v));});
+  }
+
+  function toggleBookmarkPanel(){
+    const visible = bookmarkPanel.style.display !== 'none' && bookmarkPanel.style.display !== '';
+    bookmarkPanel.style.display = visible ? 'none' : 'block';
+    renderBookmarks();
+  }
+
+  // init app
+  init();
+</script>
+
+</body>
+</html>
