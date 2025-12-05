@@ -14,7 +14,7 @@ async function loadBibleData() {
         const loadingEl = document.getElementById('stats');
         loadingEl.textContent = 'Loading Bible data...';
         
-        const response = await fetch('download_bible.py');
+        const response = await fetch('bible-kjv.json');
         
         if (!response.ok) {
             throw new Error(`Failed to load Bible data: ${response.status}`);
