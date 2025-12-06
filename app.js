@@ -52,7 +52,7 @@ class BibleApp {
     
     async loadBibleData() {
         // Load the Bible JSON file
-        const response = await fetch('https://skadigitalhub.github.io/NKJVBible/bible-kjv.json');
+        const response = await fetch('bible-kjv.json');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -259,4 +259,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Make app globally accessible for debugging (optional)
     window.bibleApp = app;
+
 });
